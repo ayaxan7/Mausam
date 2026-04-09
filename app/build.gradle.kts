@@ -1,9 +1,30 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
+}
+
+val localProperties = Properties().apply {
+    val localPropertiesFile = rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        localPropertiesFile.inputStream().use(::load)
+    }
+}
+
+val openWeatherApiKey = (
+    localProperties.getProperty("OPEN_WEATHER_API_KEY")
+        ?: providers.gradleProperty("OPEN_WEATHER_API_KEY").orNull
+        ?: ""
+).trim()
+
+if (openWeatherApiKey.isEmpty()) {
+    throw GradleException(
+        "Missing OPEN_WEATHER_API_KEY. Add it to local.properties or pass -POPEN_WEATHER_API_KEY=..."
+    )
 }
 
 android {
@@ -18,6 +39,7 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "OPEN_WEATHER_API_KEY", "\"$openWeatherApiKey\"")
     }
 
     buildTypes {
@@ -34,6 +56,7 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     buildFeatures {
+        buildConfig = true
         compose = true
     }
 }

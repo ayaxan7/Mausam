@@ -24,15 +24,13 @@ A modern, clean architecture Android application that tracks weather history, bu
 3. Generate a new key.
 
 ### 3. Adding the API Key to the Project
-Open the file `app/src/main/java/com/ayaan/mausam/util/Constants.kt` and replace `YOUR_OPENWEATHERMAP_API_KEY_HERE` with the key you just generated:
+Add your key to `local.properties` (project root):
 
-```kotlin
-object Constants {
-    const val BASE_URL = "https://api.openweathermap.org/"
-    const val API_KEY = "YOUR_ACTUAL_API_KEY_HERE"
-    // ...
-}
+```properties
+OPEN_WEATHER_API_KEY=YOUR_ACTUAL_API_KEY_HERE
 ```
+
+This value is injected into `BuildConfig.OPEN_WEATHER_API_KEY` during build and is not stored in source files.
 
 ### 4. Running the Project
 1. Clone the repository.

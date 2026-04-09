@@ -2,6 +2,7 @@ package com.ayaan.mausam.di
 
 import android.content.Context
 import androidx.room.Room
+import com.ayaan.mausam.data.api.PlacesApiService
 import com.ayaan.mausam.data.api.WeatherApiService
 import com.ayaan.mausam.data.db.WeatherDao
 import com.ayaan.mausam.data.db.WeatherDatabase
@@ -16,6 +17,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
+import javax.inject.Named
 import javax.inject.Singleton
 
 @Module
@@ -28,7 +30,8 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(): OkHttpClient {
+    @Named("weatherClient")
+    fun provideWeatherOkHttpClient(): OkHttpClient {
         val logging = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
         }
@@ -41,7 +44,28 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit =
+    @Named("nominatimClient")
+    fun provideNominatimOkHttpClient(): OkHttpClient {
+        val logging = HttpLoggingInterceptor().apply {
+            level = HttpLoggingInterceptor.Level.BASIC
+        }
+        return OkHttpClient.Builder()
+            .addInterceptor { chain ->
+                val request = chain.request().newBuilder()
+                    .header("User-Agent", Constants.OSM_USER_AGENT)
+                    .build()
+                chain.proceed(request)
+            }
+            .addInterceptor(logging)
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    @Named("weatherRetrofit")
+    fun provideWeatherRetrofit(@Named("weatherClient") okHttpClient: OkHttpClient): Retrofit =
         Retrofit.Builder()
             .baseUrl(Constants.BASE_URL)
             .client(okHttpClient)
@@ -50,8 +74,23 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideWeatherApiService(retrofit: Retrofit): WeatherApiService =
+    @Named("nominatimRetrofit")
+    fun provideNominatimRetrofit(@Named("nominatimClient") okHttpClient: OkHttpClient): Retrofit =
+        Retrofit.Builder()
+            .baseUrl(Constants.OSM_BASE_URL)
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+
+    @Provides
+    @Singleton
+    fun provideWeatherApiService(@Named("weatherRetrofit") retrofit: Retrofit): WeatherApiService =
         retrofit.create(WeatherApiService::class.java)
+
+    @Provides
+    @Singleton
+    fun providePlacesApiService(@Named("nominatimRetrofit") retrofit: Retrofit): PlacesApiService =
+        retrofit.create(PlacesApiService::class.java)
 
     // ──────────────────────────────────────────────
     // Database

@@ -1,5 +1,6 @@
 package com.ayaan.mausam.data.api
 
+import com.ayaan.mausam.BuildConfig
 import com.ayaan.mausam.model.ForecastResponse
 import com.ayaan.mausam.model.WeatherResponse
 import com.ayaan.mausam.util.Constants
@@ -12,7 +13,7 @@ interface WeatherApiService {
     @GET("data/2.5/weather")
     suspend fun getCurrentWeather(
         @Query("q")     cityName: String,
-        @Query("appid") apiKey: String = Constants.API_KEY,
+        @Query("appid") apiKey: String = BuildConfig.OPEN_WEATHER_API_KEY,
         @Query("units") units: String = Constants.UNITS
     ): Response<WeatherResponse>
 
@@ -20,14 +21,14 @@ interface WeatherApiService {
     suspend fun getCurrentWeatherByCoords(
         @Query("lat")   lat: Double,
         @Query("lon")   lon: Double,
-        @Query("appid") apiKey: String = Constants.API_KEY,
+        @Query("appid") apiKey: String = BuildConfig.OPEN_WEATHER_API_KEY,
         @Query("units") units: String = Constants.UNITS
     ): Response<WeatherResponse>
 
     @GET("data/2.5/forecast")
     suspend fun getForecast(
         @Query("q")     cityName: String,
-        @Query("appid") apiKey: String = Constants.API_KEY,
+        @Query("appid") apiKey: String = BuildConfig.OPEN_WEATHER_API_KEY,
         @Query("units") units: String = Constants.UNITS
     ): Response<ForecastResponse>
 
@@ -35,7 +36,7 @@ interface WeatherApiService {
     suspend fun getForecastByCoords(
         @Query("lat")   lat: Double,
         @Query("lon")   lon: Double,
-        @Query("appid") apiKey: String = Constants.API_KEY,
+        @Query("appid") apiKey: String = BuildConfig.OPEN_WEATHER_API_KEY,
         @Query("units") units: String = Constants.UNITS
     ): Response<ForecastResponse>
 }

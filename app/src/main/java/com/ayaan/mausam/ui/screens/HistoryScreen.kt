@@ -1,16 +1,39 @@
 package com.ayaan.mausam.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -26,8 +49,7 @@ import com.ayaan.mausam.viewmodel.WeatherViewModel
 
 @Composable
 fun HistoryScreen(
-    onBack: () -> Unit,
-    viewModel: WeatherViewModel = hiltViewModel()
+    onBack: () -> Unit, viewModel: WeatherViewModel = hiltViewModel()
 ) {
     val historyList by viewModel.historyState.collectAsStateWithLifecycle()
     var showClearDialog by remember { mutableStateOf(false) }
@@ -42,7 +64,12 @@ fun HistoryScreen(
             onDismissRequest = { showClearDialog = false },
             containerColor = Color(0xFF1B2A3B),
             title = { Text("Clear History", color = Color.White, fontWeight = FontWeight.Bold) },
-            text  = { Text("Are you sure you want to delete all history?", color = Color(0xFFBBDEFB)) },
+            text = {
+                Text(
+                    "Are you sure you want to delete all history?",
+                    color = Color(0xFFBBDEFB)
+                )
+            },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.clearHistory()
@@ -55,8 +82,7 @@ fun HistoryScreen(
                 TextButton(onClick = { showClearDialog = false }) {
                     Text("Cancel", color = Color(0xFF90CAF9))
                 }
-            }
-        )
+            })
     }
 
     Box(
@@ -79,7 +105,7 @@ fun HistoryScreen(
             ) {
                 IconButton(onClick = onBack) {
                     Icon(
-                        imageVector = Icons.Default.ArrowBack,
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
                         tint = Color.White
                     )
@@ -103,7 +129,7 @@ fun HistoryScreen(
                 }
             }
 
-            Divider(
+            HorizontalDivider(
                 color = Color.White.copy(alpha = 0.08f),
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
@@ -170,9 +196,7 @@ fun HistoryScreen(
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     items(
-                        items = historyList,
-                        key = { it.id }
-                    ) { entity ->
+                        items = historyList, key = { it.id }) { entity ->
                         HistoryItem(entity = entity)
                     }
                     item { Spacer(Modifier.height(24.dp)) }

@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -32,7 +31,6 @@ import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ayaan.mausam.model.ForecastResponse
-import com.ayaan.mausam.model.WeatherResponse
 import com.ayaan.mausam.ui.components.DailyForecastItem
 import com.ayaan.mausam.ui.components.ForecastItem
 import com.ayaan.mausam.ui.components.SearchBar
@@ -52,6 +50,8 @@ fun HomeScreen(
     val weatherState by viewModel.weatherState.collectAsStateWithLifecycle()
     val forecastState by viewModel.forecastState.collectAsStateWithLifecycle()
     val searchQuery  by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val citySuggestions by viewModel.citySuggestions.collectAsStateWithLifecycle()
+    val isSuggestionsLoading by viewModel.isSuggestionsLoading.collectAsStateWithLifecycle()
 
     // ──── Permission launcher ────────────────────────────────────────────────
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -137,8 +137,14 @@ fun HomeScreen(
             item {
                 SearchBar(
                     query = searchQuery,
+                    suggestions = citySuggestions,
+                    isLoadingSuggestions = isSuggestionsLoading,
                     onQueryChange = viewModel::onSearchQueryChange,
-                    onSearch = { viewModel.fetchWeatherByCity(searchQuery) }
+                    onSuggestionClick = viewModel::onSuggestionSelected,
+                    onSearch = {
+                        viewModel.clearSuggestions()
+                        viewModel.fetchWeatherByCity(searchQuery)
+                    }
                 )
             }
 

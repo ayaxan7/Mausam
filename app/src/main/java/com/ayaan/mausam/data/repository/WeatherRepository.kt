@@ -1,9 +1,11 @@
 package com.ayaan.mausam.data.repository
 
 import com.ayaan.mausam.data.api.WeatherApiService
+import com.ayaan.mausam.data.api.PlacesApiService
 import com.ayaan.mausam.data.db.WeatherDao
 import com.ayaan.mausam.data.db.WeatherHistoryEntity
 import com.ayaan.mausam.model.ForecastResponse
+import com.ayaan.mausam.model.PlaceSuggestion
 import com.ayaan.mausam.model.WeatherResponse
 import com.ayaan.mausam.util.UiState
 import kotlinx.coroutines.flow.Flow
@@ -13,8 +15,44 @@ import javax.inject.Singleton
 @Singleton
 class WeatherRepository @Inject constructor(
     private val apiService: WeatherApiService,
+    private val placesApiService: PlacesApiService,
     private val weatherDao: WeatherDao
 ) {
+
+    suspend fun searchCities(query: String): UiState<List<PlaceSuggestion>> {
+        return try {
+            val response = placesApiService.searchPlaces(query = query)
+            if (response.isSuccessful && response.body() != null) {
+                val suggestions = response.body().orEmpty().mapNotNull { place ->
+                    val cityName = place.name
+                        ?: place.address?.city
+                        ?: place.address?.town
+                        ?: place.address?.village
+                        ?: place.address?.municipality
+                        ?: place.address?.county
+                        ?: place.address?.state
+                        ?: return@mapNotNull null
+
+                    val country = place.address?.country.orEmpty()
+                    val lat = place.lat.toDoubleOrNull() ?: return@mapNotNull null
+                    val lon = place.lon.toDoubleOrNull() ?: return@mapNotNull null
+
+                    PlaceSuggestion(
+                        title = cityName,
+                        subtitle = if (country.isBlank()) place.displayName else "$cityName, $country",
+                        latitude = lat,
+                        longitude = lon
+                    )
+                }.distinctBy { "${it.title}_${it.subtitle}" }
+
+                UiState.Success(suggestions)
+            } else {
+                UiState.Error("Failed to fetch city suggestions (${response.code()}).")
+            }
+        } catch (e: Exception) {
+            UiState.Error("Could not fetch suggestions. ${e.localizedMessage ?: ""}".trim())
+        }
+    }
 
     // ──────────────────────────────────────────────
     // Remote — current weather
@@ -31,7 +69,7 @@ class WeatherRepository @Inject constructor(
                 val code = response.code()
                 when (code) {
                     404 -> UiState.Error("City \"$city\" not found. Please check the spelling.")
-                    401 -> UiState.Error("Invalid API key. Update it in Constants.kt.")
+                    401 -> UiState.Error("Invalid API key. Set OPEN_WEATHER_API_KEY in local.properties.")
                     else -> UiState.Error("Server error ($code). Please try again.")
                 }
             }

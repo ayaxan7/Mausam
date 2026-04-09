@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.Air
 import androidx.compose.material.icons.filled.Thermostat
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.*
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -110,7 +111,7 @@ fun WeatherCard(
                 )
 
                 Spacer(modifier = Modifier.height(20.dp))
-                Divider(color = Color.White.copy(alpha = 0.15f))
+                HorizontalDivider(color = Color.White.copy(alpha = 0.15f))
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // Extra info row

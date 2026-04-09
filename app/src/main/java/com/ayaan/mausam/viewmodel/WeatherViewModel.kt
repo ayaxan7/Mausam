@@ -1,25 +1,28 @@
 package com.ayaan.mausam.viewmodel
 
 import android.app.Application
-import android.content.Context
-import android.location.Geocoder
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.ayaan.mausam.data.db.WeatherHistoryEntity
+import com.ayaan.mausam.model.PlaceSuggestion
 import com.ayaan.mausam.data.repository.WeatherRepository
 import com.ayaan.mausam.model.ForecastResponse
 import com.ayaan.mausam.model.ForecastItem
 import com.ayaan.mausam.model.WeatherResponse
 import com.ayaan.mausam.util.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
-import java.util.Locale
 import javax.inject.Inject
 
 @HiltViewModel
+@OptIn(FlowPreview::class)
 class WeatherViewModel @Inject constructor(
     application: Application,
     private val repository: WeatherRepository
@@ -41,6 +44,14 @@ class WeatherViewModel @Inject constructor(
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
+    private val _citySuggestions = MutableStateFlow<List<PlaceSuggestion>>(emptyList())
+    val citySuggestions: StateFlow<List<PlaceSuggestion>> = _citySuggestions.asStateFlow()
+
+    private val _isSuggestionsLoading = MutableStateFlow(false)
+    val isSuggestionsLoading: StateFlow<Boolean> = _isSuggestionsLoading.asStateFlow()
+
+    private var suppressAutocomplete = false
+
     // ──────────────────────────────────────────────
     // Init — start collecting history
     // ──────────────────────────────────────────────
@@ -51,6 +62,32 @@ class WeatherViewModel @Inject constructor(
                 _historyState.value = list
             }
         }
+
+        viewModelScope.launch {
+            _searchQuery
+                .debounce(350)
+                .distinctUntilChanged()
+                .collectLatest { query ->
+                    if (suppressAutocomplete) {
+                        suppressAutocomplete = false
+                        return@collectLatest
+                    }
+
+                    val normalizedQuery = query.trim()
+                    if (normalizedQuery.length < 2) {
+                        _citySuggestions.value = emptyList()
+                        _isSuggestionsLoading.value = false
+                        return@collectLatest
+                    }
+
+                    _isSuggestionsLoading.value = true
+                    when (val result = repository.searchCities(normalizedQuery)) {
+                        is UiState.Success -> _citySuggestions.value = result.data
+                        else -> _citySuggestions.value = emptyList()
+                    }
+                    _isSuggestionsLoading.value = false
+                }
+        }
     }
 
     // ──────────────────────────────────────────────
@@ -59,6 +96,18 @@ class WeatherViewModel @Inject constructor(
 
     fun onSearchQueryChange(query: String) {
         _searchQuery.value = query
+    }
+
+    fun clearSuggestions() {
+        _citySuggestions.value = emptyList()
+        _isSuggestionsLoading.value = false
+    }
+
+    fun onSuggestionSelected(suggestion: PlaceSuggestion) {
+        suppressAutocomplete = true
+        _searchQuery.value = suggestion.title
+        clearSuggestions()
+        fetchWeatherByCoords(suggestion.latitude, suggestion.longitude)
     }
 
     // ──────────────────────────────────────────────
@@ -71,6 +120,7 @@ class WeatherViewModel @Inject constructor(
             return
         }
         viewModelScope.launch {
+            clearSuggestions()
             _weatherState.value  = UiState.Loading
             _forecastState.value = UiState.Loading
 
@@ -94,7 +144,9 @@ class WeatherViewModel @Inject constructor(
             // Update search bar with resolved city name
             if (_weatherState.value is UiState.Success) {
                 val cityName = (_weatherState.value as UiState.Success<WeatherResponse>).data.name
+                suppressAutocomplete = true
                 _searchQuery.value = cityName
+                clearSuggestions()
             }
         }
     }
