@@ -30,11 +30,16 @@ class MainActivity : ComponentActivity() {
 fun MausamNavGraph() {
     val navController = rememberNavController()
     NavHost(navController = navController, startDestination = "home") {
-        composable("home") {
+        composable(Route.Home.path) {
             HomeScreen(onNavigateToHistory = { navController.navigate("history") })
         }
-        composable("history") {
+        composable(Route.History.path) {
             HistoryScreen(onBack = { navController.popBackStack() })
         }
     }
+}
+sealed class Route(val path:String){
+    object Home:Route("home")
+    object History:Route("history")
+
 }

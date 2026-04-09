@@ -6,9 +6,6 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-
-// Using the system default sans-serif for broad compatibility.
-// Swap `FontFamily.Default` with a downloaded Google Font (e.g. Inter) if desired.
 val MausamTypography = Typography(
     displayLarge = TextStyle(
         fontFamily = FontFamily.Default,

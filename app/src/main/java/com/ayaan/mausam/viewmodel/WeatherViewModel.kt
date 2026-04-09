@@ -27,11 +27,6 @@ class WeatherViewModel @Inject constructor(
     application: Application,
     private val repository: WeatherRepository
 ) : AndroidViewModel(application) {
-
-    // ──────────────────────────────────────────────
-    // UI State Flows
-    // ──────────────────────────────────────────────
-
     private val _weatherState = MutableStateFlow<UiState<WeatherResponse>>(UiState.Empty)
     val weatherState: StateFlow<UiState<WeatherResponse>> = _weatherState.asStateFlow()
 
@@ -51,10 +46,6 @@ class WeatherViewModel @Inject constructor(
     val isSuggestionsLoading: StateFlow<Boolean> = _isSuggestionsLoading.asStateFlow()
 
     private var suppressAutocomplete = false
-
-    // ──────────────────────────────────────────────
-    // Init — start collecting history
-    // ──────────────────────────────────────────────
 
     init {
         viewModelScope.launch {
@@ -89,11 +80,6 @@ class WeatherViewModel @Inject constructor(
                 }
         }
     }
-
-    // ──────────────────────────────────────────────
-    // Search query
-    // ──────────────────────────────────────────────
-
     fun onSearchQueryChange(query: String) {
         _searchQuery.value = query
     }
@@ -110,10 +96,6 @@ class WeatherViewModel @Inject constructor(
         fetchWeatherByCoords(suggestion.latitude, suggestion.longitude)
     }
 
-    // ──────────────────────────────────────────────
-    // Fetch by city name
-    // ──────────────────────────────────────────────
-
     fun fetchWeatherByCity(city: String) {
         if (city.isBlank()) {
             _weatherState.value = UiState.Error("Please enter a city name.")
@@ -128,10 +110,6 @@ class WeatherViewModel @Inject constructor(
             _forecastState.value = repository.getForecast(city)
         }
     }
-
-    // ──────────────────────────────────────────────
-    // Fetch by GPS coordinates
-    // ──────────────────────────────────────────────
 
     fun fetchWeatherByCoords(lat: Double, lon: Double) {
         viewModelScope.launch {
@@ -151,17 +129,9 @@ class WeatherViewModel @Inject constructor(
         }
     }
 
-    // ──────────────────────────────────────────────
-    // History
-    // ──────────────────────────────────────────────
-
     fun clearHistory() {
         viewModelScope.launch { repository.clearHistory() }
     }
-
-    // ──────────────────────────────────────────────
-    // Helpers — parse today's 3-hour forecast items
-    // ──────────────────────────────────────────────
 
     fun getTodayForecast(forecast: ForecastResponse): List<ForecastItem> {
         val todayPrefix = forecast.list.firstOrNull()?.dtTxt?.substring(0, 10) ?: return emptyList()

@@ -58,7 +58,6 @@ fun HistoryScreen(
         colors = listOf(Color(0xFF0D1B2A), Color(0xFF1B2A3B), Color(0xFF0A1929))
     )
 
-    // ──── Clear confirmation dialog ──────────────────────────────────────────
     if (showClearDialog) {
         AlertDialog(
             onDismissRequest = { showClearDialog = false },
@@ -96,7 +95,6 @@ fun HistoryScreen(
                 .statusBarsPadding()
                 .navigationBarsPadding()
         ) {
-            // ──── Top bar ──────────────────────────────────────────────────
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -136,7 +134,6 @@ fun HistoryScreen(
 
             Spacer(Modifier.height(8.dp))
 
-            // ──── Content ─────────────────────────────────────────────────
             if (historyList.isEmpty()) {
                 // Empty state
                 Box(

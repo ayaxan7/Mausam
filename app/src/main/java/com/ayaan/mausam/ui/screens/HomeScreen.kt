@@ -53,7 +53,6 @@ fun HomeScreen(
     val citySuggestions by viewModel.citySuggestions.collectAsStateWithLifecycle()
     val isSuggestionsLoading by viewModel.isSuggestionsLoading.collectAsStateWithLifecycle()
 
-    // ──── Permission launcher ────────────────────────────────────────────────
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
@@ -64,7 +63,6 @@ fun HomeScreen(
         }
     }
 
-    // ──── Auto-fetch on first launch ────────────────────────────────────────
     LaunchedEffect(Unit) {
         val hasFine   = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)   == PackageManager.PERMISSION_GRANTED
         val hasCoarse = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
@@ -80,7 +78,6 @@ fun HomeScreen(
         }
     }
 
-    // ──── Background gradient ───────────────────────────────────────────────
     val backgroundBrush = Brush.verticalGradient(
         colors = listOf(Color(0xFF0D1B2A), Color(0xFF1B2A3B), Color(0xFF0A1929))
     )
@@ -258,8 +255,6 @@ fun HomeScreen(
         }
     }
 }
-
-// ──── Private helpers ────────────────────────────────────────────────────────
 
 @SuppressLint("MissingPermission")
 private fun fetchLocationAndWeather(context: Context, viewModel: WeatherViewModel) {

@@ -23,11 +23,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
-
-    // ──────────────────────────────────────────────
-    // Networking
-    // ──────────────────────────────────────────────
-
     @Provides
     @Singleton
     @Named("weatherClient")
@@ -91,10 +86,6 @@ object AppModule {
     @Singleton
     fun providePlacesApiService(@Named("nominatimRetrofit") retrofit: Retrofit): PlacesApiService =
         retrofit.create(PlacesApiService::class.java)
-
-    // ──────────────────────────────────────────────
-    // Database
-    // ──────────────────────────────────────────────
 
     @Provides
     @Singleton
