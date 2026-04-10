@@ -154,10 +154,7 @@ fun HomeScreen(
                     isLoadingSuggestions = isSuggestionsLoading,
                     onQueryChange = viewModel::onSearchQueryChange,
                     onSuggestionClick = viewModel::onSuggestionSelected,
-                    onSearch = {
-                        viewModel.clearSuggestions()
-                        viewModel.fetchWeatherByCity(searchQuery)
-                    }
+                    onSearch = viewModel::onSearchSubmitted
                 )
             }
 

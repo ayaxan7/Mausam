@@ -48,6 +48,8 @@ class WeatherViewModel @Inject constructor(
     private val _displayLocationLabel = MutableStateFlow<String?>(null)
     val displayLocationLabel: StateFlow<String?> = _displayLocationLabel.asStateFlow()
 
+    private var selectedSuggestion: PlaceSuggestion? = null
+
     private var suppressAutocomplete = false
 
     init {
@@ -84,6 +86,7 @@ class WeatherViewModel @Inject constructor(
         }
     }
     fun onSearchQueryChange(query: String) {
+        selectedSuggestion = null
         _searchQuery.value = query
     }
 
@@ -94,6 +97,7 @@ class WeatherViewModel @Inject constructor(
 
     fun onSuggestionSelected(suggestion: PlaceSuggestion) {
         suppressAutocomplete = true
+        selectedSuggestion = suggestion
         _searchQuery.value = suggestion.title
         clearSuggestions()
         fetchWeatherByCoords(
@@ -103,12 +107,28 @@ class WeatherViewModel @Inject constructor(
         )
     }
 
+    fun onSearchSubmitted() {
+        val selected = selectedSuggestion
+        if (selected != null && _searchQuery.value.trim() == selected.title.trim()) {
+            fetchWeatherByCoords(
+                selected.latitude,
+                selected.longitude,
+                displayLocationName = selected.title
+            )
+            return
+        }
+
+        selectedSuggestion = null
+        fetchWeatherByCity(_searchQuery.value)
+    }
+
     fun fetchWeatherByCity(city: String) {
         if (city.isBlank()) {
             _weatherState.value = UiState.Error("Please enter a city name.")
             return
         }
         viewModelScope.launch {
+            selectedSuggestion = null
             clearSuggestions()
             _displayLocationLabel.value = city
             _weatherState.value  = UiState.Loading
