@@ -50,9 +50,3 @@ The application follows the **MVVM** pattern with robust separation of concerns 
 ### UI Layer
 * **ViewModel**: `WeatherViewModel` orchestrates requests from the UI. It provides hot `StateFlow` sources to the Composable screens, exposing discrete states like `Loading`, `Success`, `Error`, and `Empty`.
 * **Jetpack Compose Screens**: Reusable, stateless components mapped directly to the active state using unidirectional data flow. This ensures a predictable, snappy user interface.
-
-## Screenshots
-| Home Screen | History Screen |
-| :---: | :---: |
-| ![Home Placeholder](https://via.placeholder.com/250x500.png?text=Home+Screen) | ![History Placeholder](https://via.placeholder.com/250x500.png?text=History+Screen) |
-| Shows live weather, 5-day forecast, and search. | Displays past weather queries persisted locally. |
