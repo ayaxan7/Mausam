@@ -19,7 +19,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.foundation.LocalIndication
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -132,7 +131,7 @@ fun SearchBar(
                                 .fillMaxWidth()
                                 .clickable(
                                     interactionSource = interactionSource,
-                                    indication = LocalIndication.current
+                                    indication = null
                                 ) { onSuggestionClick(suggestion) }
                                 .padding(horizontal = 14.dp, vertical = 10.dp)
                         ) {

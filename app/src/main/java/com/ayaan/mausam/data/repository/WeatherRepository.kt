@@ -54,10 +54,6 @@ class WeatherRepository @Inject constructor(
         }
     }
 
-    // ──────────────────────────────────────────────
-    // Remote — current weather
-    // ──────────────────────────────────────────────
-
     suspend fun getCurrentWeather(city: String): UiState<WeatherResponse> {
         return try {
             val response = apiService.getCurrentWeather(city)
@@ -73,37 +69,37 @@ class WeatherRepository @Inject constructor(
                     else -> UiState.Error("Server error ($code). Please try again.")
                 }
             }
-        } catch (e: java.net.UnknownHostException) {
+        } catch (_: java.net.UnknownHostException) {
             UiState.Error("No internet connection. Please check your network.")
-        } catch (e: java.net.SocketTimeoutException) {
+        } catch (_: java.net.SocketTimeoutException) {
             UiState.Error("Request timed out. Please try again.")
         } catch (e: Exception) {
             UiState.Error("Unexpected error: ${e.localizedMessage}")
         }
     }
 
-    suspend fun getCurrentWeatherByCoords(lat: Double, lon: Double): UiState<WeatherResponse> {
+    suspend fun getCurrentWeatherByCoords(
+        lat: Double,
+        lon: Double,
+        displayLocationName: String? = null
+    ): UiState<WeatherResponse> {
         return try {
             val response = apiService.getCurrentWeatherByCoords(lat, lon)
             if (response.isSuccessful && response.body() != null) {
                 val body = response.body()!!
-                saveToHistory(body)
+                saveToHistory(body, displayLocationName)
                 UiState.Success(body)
             } else {
                 UiState.Error("Failed to fetch weather for your location (${response.code()}).")
             }
-        } catch (e: java.net.UnknownHostException) {
+        } catch (_: java.net.UnknownHostException) {
             UiState.Error("No internet connection. Please check your network.")
-        } catch (e: java.net.SocketTimeoutException) {
+        } catch (_: java.net.SocketTimeoutException) {
             UiState.Error("Request timed out. Please try again.")
         } catch (e: Exception) {
             UiState.Error("Unexpected error: ${e.localizedMessage}")
         }
     }
-
-    // ──────────────────────────────────────────────
-    // Remote — forecast
-    // ──────────────────────────────────────────────
 
     suspend fun getForecast(city: String): UiState<ForecastResponse> {
         return try {
@@ -113,9 +109,9 @@ class WeatherRepository @Inject constructor(
             } else {
                 UiState.Error("Failed to fetch forecast (${response.code()}).")
             }
-        } catch (e: java.net.UnknownHostException) {
+        } catch (_: java.net.UnknownHostException) {
             UiState.Error("No internet connection. Please check your network.")
-        } catch (e: java.net.SocketTimeoutException) {
+        } catch (_: java.net.SocketTimeoutException) {
             UiState.Error("Request timed out. Please try again.")
         } catch (e: Exception) {
             UiState.Error("Unexpected error: ${e.localizedMessage}")
@@ -130,30 +126,26 @@ class WeatherRepository @Inject constructor(
             } else {
                 UiState.Error("Failed to fetch forecast for your location (${response.code()}).")
             }
-        } catch (e: java.net.UnknownHostException) {
+        } catch (_: java.net.UnknownHostException) {
             UiState.Error("No internet connection. Please check your network.")
-        } catch (e: java.net.SocketTimeoutException) {
+        } catch (_: java.net.SocketTimeoutException) {
             UiState.Error("Request timed out. Please try again.")
         } catch (e: Exception) {
             UiState.Error("Unexpected error: ${e.localizedMessage}")
         }
     }
 
-    // ──────────────────────────────────────────────
-    // Local — history
-    // ──────────────────────────────────────────────
-
     fun getWeatherHistory(): Flow<List<WeatherHistoryEntity>> = weatherDao.getAllHistory()
 
     suspend fun clearHistory() = weatherDao.clearHistory()
 
-    // ──────────────────────────────────────────────
-    // Private helpers
-    // ──────────────────────────────────────────────
-
-    private suspend fun saveToHistory(weather: WeatherResponse) {
+    private suspend fun saveToHistory(weather: WeatherResponse, overrideCityName: String? = null) {
         val entity = WeatherHistoryEntity(
-            cityName    = "${weather.name}, ${weather.sys.country}",
+            cityName    = if (!overrideCityName.isNullOrBlank()) {
+                overrideCityName
+            } else {
+                "${weather.name}, ${weather.sys.country}"
+            },
             temperature = weather.main.temp,
             description = weather.weather.firstOrNull()?.description?.replaceFirstChar { it.uppercase() } ?: "",
             iconCode    = weather.weather.firstOrNull()?.icon ?: "01d"

@@ -30,6 +30,7 @@ import kotlin.math.roundToInt
 @Composable
 fun WeatherCard(
     weather: WeatherResponse,
+    locationName: String? = null,
     modifier: Modifier = Modifier
 ) {
     val gradientBrush = Brush.linearGradient(
@@ -60,7 +61,8 @@ fun WeatherCard(
                         modifier = Modifier.size(20.dp)
                     )
                     Text(
-                        text = "${weather.name}, ${weather.sys.country}",
+                        text = locationName?.takeIf { it.isNotBlank() }
+                            ?: "${weather.name}, ${weather.sys.country}",
                         color = Color.White,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 18.sp

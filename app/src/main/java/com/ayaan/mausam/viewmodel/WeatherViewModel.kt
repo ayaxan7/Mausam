@@ -45,6 +45,9 @@ class WeatherViewModel @Inject constructor(
     private val _isSuggestionsLoading = MutableStateFlow(false)
     val isSuggestionsLoading: StateFlow<Boolean> = _isSuggestionsLoading.asStateFlow()
 
+    private val _displayLocationLabel = MutableStateFlow<String?>(null)
+    val displayLocationLabel: StateFlow<String?> = _displayLocationLabel.asStateFlow()
+
     private var suppressAutocomplete = false
 
     init {
@@ -93,7 +96,11 @@ class WeatherViewModel @Inject constructor(
         suppressAutocomplete = true
         _searchQuery.value = suggestion.title
         clearSuggestions()
-        fetchWeatherByCoords(suggestion.latitude, suggestion.longitude)
+        fetchWeatherByCoords(
+            suggestion.latitude,
+            suggestion.longitude,
+            displayLocationName = suggestion.title
+        )
     }
 
     fun fetchWeatherByCity(city: String) {
@@ -103,6 +110,7 @@ class WeatherViewModel @Inject constructor(
         }
         viewModelScope.launch {
             clearSuggestions()
+            _displayLocationLabel.value = city
             _weatherState.value  = UiState.Loading
             _forecastState.value = UiState.Loading
 
@@ -111,21 +119,19 @@ class WeatherViewModel @Inject constructor(
         }
     }
 
-    fun fetchWeatherByCoords(lat: Double, lon: Double) {
+    fun fetchWeatherByCoords(lat: Double, lon: Double, displayLocationName: String? = null) {
         viewModelScope.launch {
             _weatherState.value  = UiState.Loading
             _forecastState.value = UiState.Loading
 
-            _weatherState.value  = repository.getCurrentWeatherByCoords(lat, lon)
+            _weatherState.value  = repository.getCurrentWeatherByCoords(lat, lon, displayLocationName)
             _forecastState.value = repository.getForecastByCoords(lat, lon)
 
-            // Update search bar with resolved city name
-            if (_weatherState.value is UiState.Success) {
-                val cityName = (_weatherState.value as UiState.Success<WeatherResponse>).data.name
-                suppressAutocomplete = true
-                _searchQuery.value = cityName
-                clearSuggestions()
+            val resolvedLabel = displayLocationName ?: when (val weather = _weatherState.value) {
+                is UiState.Success -> weather.data.name
+                else -> null
             }
+            _displayLocationLabel.value = resolvedLabel
         }
     }
 

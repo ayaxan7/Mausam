@@ -3,7 +3,10 @@ package com.ayaan.mausam.ui.screens
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.location.LocationManager
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -28,6 +31,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import androidx.core.location.LocationManagerCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ayaan.mausam.model.ForecastResponse
@@ -52,6 +56,8 @@ fun HomeScreen(
     val searchQuery  by viewModel.searchQuery.collectAsStateWithLifecycle()
     val citySuggestions by viewModel.citySuggestions.collectAsStateWithLifecycle()
     val isSuggestionsLoading by viewModel.isSuggestionsLoading.collectAsStateWithLifecycle()
+    val displayLocationLabel by viewModel.displayLocationLabel.collectAsStateWithLifecycle()
+    var showLocationDisabledDialog by remember { mutableStateOf(false) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
@@ -59,23 +65,33 @@ fun HomeScreen(
         val granted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
                       permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
         if (granted) {
-            fetchLocationAndWeather(context, viewModel)
+            requestDeviceLocation(
+                context = context,
+                viewModel = viewModel,
+                onPermissionMissing = { },
+                onLocationDisabled = { showLocationDisabledDialog = true }
+            )
         }
     }
 
-    LaunchedEffect(Unit) {
-        val hasFine   = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)   == PackageManager.PERMISSION_GRANTED
-        val hasCoarse = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
-        if (hasFine || hasCoarse) {
-            fetchLocationAndWeather(context, viewModel)
-        } else {
-            permissionLauncher.launch(
-                arrayOf(
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.ACCESS_COARSE_LOCATION
+    val requestCurrentLocation = {
+        requestDeviceLocation(
+            context = context,
+            viewModel = viewModel,
+            onPermissionMissing = {
+                permissionLauncher.launch(
+                    arrayOf(
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION
+                    )
                 )
-            )
-        }
+            },
+            onLocationDisabled = { showLocationDisabledDialog = true }
+        )
+    }
+
+    LaunchedEffect(Unit) {
+        requestCurrentLocation()
     }
 
     val backgroundBrush = Brush.verticalGradient(
@@ -148,20 +164,7 @@ fun HomeScreen(
             // Location button
             item {
                 OutlinedButton(
-                    onClick = {
-                        val hasFine   = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)   == PackageManager.PERMISSION_GRANTED
-                        val hasCoarse = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
-                        if (hasFine || hasCoarse) {
-                            fetchLocationAndWeather(context, viewModel)
-                        } else {
-                            permissionLauncher.launch(
-                                arrayOf(
-                                    Manifest.permission.ACCESS_FINE_LOCATION,
-                                    Manifest.permission.ACCESS_COARSE_LOCATION
-                                )
-                            )
-                        }
-                    },
+                    onClick = requestCurrentLocation,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.outlinedButtonColors(
@@ -195,7 +198,7 @@ fun HomeScreen(
                 }
 
                 is UiState.Success -> {
-                    item { WeatherCard(weather = state.data) }
+                    item { WeatherCard(weather = state.data, locationName = displayLocationLabel) }
 
                     // Today's forecast section
                     if (forecastState is UiState.Success) {
@@ -254,6 +257,27 @@ fun HomeScreen(
             item { Spacer(Modifier.height(80.dp)) }
         }
     }
+
+    if (showLocationDisabledDialog) {
+        AlertDialog(
+            onDismissRequest = { showLocationDisabledDialog = false },
+            title = { Text("Turn on location") },
+            text = { Text("Location services are off. Enable location in system settings to use your current position.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showLocationDisabledDialog = false
+                    context.openLocationSettings()
+                }) {
+                    Text("Open settings")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLocationDisabledDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 }
 
 @SuppressLint("MissingPermission")
@@ -272,6 +296,45 @@ private fun fetchLocationAndWeather(context: Context, viewModel: WeatherViewMode
                 }
             }
         }
+}
+
+private fun requestDeviceLocation(
+    context: Context,
+    viewModel: WeatherViewModel,
+    onPermissionMissing: () -> Unit,
+    onLocationDisabled: () -> Unit
+) {
+    val hasFine = ContextCompat.checkSelfPermission(
+        context,
+        Manifest.permission.ACCESS_FINE_LOCATION
+    ) == PackageManager.PERMISSION_GRANTED
+    val hasCoarse = ContextCompat.checkSelfPermission(
+        context,
+        Manifest.permission.ACCESS_COARSE_LOCATION
+    ) == PackageManager.PERMISSION_GRANTED
+
+    if (!hasFine && !hasCoarse) {
+        onPermissionMissing()
+        return
+    }
+
+    if (!context.isLocationServicesEnabled()) {
+        onLocationDisabled()
+        return
+    }
+
+    fetchLocationAndWeather(context, viewModel)
+}
+
+private fun Context.isLocationServicesEnabled(): Boolean {
+    val locationManager = getSystemService(Context.LOCATION_SERVICE) as? LocationManager ?: return false
+    return LocationManagerCompat.isLocationEnabled(locationManager)
+}
+
+private fun Context.openLocationSettings() {
+    startActivity(
+        Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    )
 }
 
 @Composable
